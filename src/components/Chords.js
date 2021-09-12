@@ -1,5 +1,12 @@
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
 import MIDISounds from 'midi-sounds-react';
+import Nav from './Nav';
+import Keyboard from './Keyboard';
+
+import question from './question.svg';
+import volume from './volume.svg';
+
+import '../stylesheet/RP.css';
 
 class Chords extends Component {
     constructor(props) {
@@ -17,7 +24,10 @@ class Chords extends Component {
                 base: 0, 
                 variant: "major"
             },
+            notes: [],
             octave: 4,
+            selectedNote: null,
+            keyRef: null,
         }
 
         this.chordIntervals = {
@@ -26,6 +36,56 @@ class Chords extends Component {
         }
 
         this.playChord = this.playChord.bind(this);
+    }
+
+    note2Char(note) {
+        var selectedNote = this.state.reference + parseInt(note);
+
+        if(this.state.selectedNote === null) return ["",""];
+
+        // 60: C4
+        var octave = Math.floor(selectedNote / 12)-1;
+        var rem = selectedNote % 12;
+        var note = ''
+        
+        switch(rem) {
+            case 0: note = 'C'; break;
+            case 1: note = 'C#'; break;
+            case 2: note = 'D'; break;
+            case 3: note = 'D#'; break;
+            case 4: note = 'E'; break;
+            case 5: note = 'F'; break;
+            case 6: note = 'F#'; break;
+            case 7: note = 'G'; break;
+            case 8: note = 'G#'; break;
+            case 9: note = 'A'; break;
+            case 10: note = 'A#'; break;
+            case 11: note = 'B'; break;
+        }
+
+        return [note,octave];
+    }
+
+    char2note(note, octave) {
+        var rem = 0;
+        switch(note) {
+            case 'C': rem = 0; break;
+            case 'C#': rem = 1; break;
+            case 'D': rem = 2; break;
+            case 'D#': rem = 3; break;
+            case 'E': rem = 4; break;
+            case 'F': rem = 5; break;
+            case 'F#': rem = 6; break;
+            case 'G': rem = 7; break;
+            case 'G#': rem = 8; break;
+            case 'A': rem = 9; break;
+            case 'A#': rem = 10; break;
+            case 'B': rem = 11; break;
+        }
+
+        var o = (octave + 1)*12
+
+        return rem + o;
     }
 
     componentDidMount() {
@@ -42,8 +102,17 @@ class Chords extends Component {
             newQuestion.variant = Math.floor(Math.random() * 2) ? "major" : "minor";
         } while (newQuestion.base === this.state.question.base && newQuestion.variant === this.state.question.variant);
 
+        var base = this.state.reference.base;
+        var notes = this.chordIntervals[newQuestion.variant]
+            .map(function(value) {return value + newQuestion.base;})
+            .filter(function(value) {
+                return (value >= base - 12) && (value <= base + 12)
+            });
+
+        
+
         this.playChord(newQuestion);
-        this.setState({question: newQuestion});
+        this.setState({question: newQuestion, notes: notes.slice(0,3)});
     }
 
     playChord(chord) {
@@ -58,7 +127,7 @@ class Chords extends Component {
                 return (value >= base - 12) && (value <= base + 12)
             });
 
-        this.midiSounds.playChordNow(this.state.instrument, notes, 2);
+        this.midiSounds.playChordNow(this.state.instrument, notes.slice(0,3), 2);
 	}
 
     onKeyClickHandler(note) {
@@ -80,16 +149,50 @@ class Chords extends Component {
     }
 
     render() {
+        const Button = (props) => { return(
+            <div className="button" onClick={props.onClick}>
+                <img src={props.img}></img>
+                <a>{props.txt}</a>
+            </div>
+        )}
+
+        const currNote = this.note2Char(this.state.selectedNote);
+
+        console.log("ANSWER",this.note2Char(this.state.question - this.state.reference));
         return (
-        <div className="App">
-            <p className="App-intro">Score: {this.state.score}</p>	
-            <p className="App-intro">Note: {this.state.question.base} {this.state.question.variant}</p>				
-            <p><button href="/" onClick={this.playChord.bind(this, this.state.reference)}>Reference Note</button></p>
-            <p><button href="/" onClick={this.playChord.bind(this, this.state.question)}>Question Note</button></p>
-            <p><button href="/" onClick={this.onKeyClickHandler.bind(this, 0)}>Guess</button></p>
-            <MIDISounds ref={(ref) => (this.midiSounds = ref)} appElementName="root" instruments={[3]} />	
-            <hr/>
-        </div>
-        )
+        <div className="main" style={{paddingTop:'200px'}}>
+            <Nav/>
+            
+            <div className="buttonHolder">
+                <Button onClick={this.playReference} txt={"Play Reference"} img={volume}/>
+                <Button onClick={this.playChord.bind(this, this.state.question)} txt={"Play Mystery"} img={question}/>
+            </div>
+            
+            <Keyboard ref={this.keyRef} onKeyClickHandler={this.onKeyClickHandler}/>
+            {/* <p className="App-intro">Score: {this.state.score}</p>	
+            <p className="App-intro">Note: {this.state.question}</p>				
+            
+            <p><button href="/" onClick={this.onKeyClickHandler.bind(this, 0)}>Guess</button></p> */}
+            <MIDISounds ref={(ref) => (this.midiSounds = ref)} appElementName="root" instruments={[this.state.instrument]}/>	
+            
+            <div className="score">Correct: {this.state.score}</div>
+            <div className="inputs">
+            <div className="board">{currNote[0]}</div>
+            <div className="board">{currNote[1]}</div>
+            </div>
+            <div className="submitBtn" onClick={this.submitAnswer}>Submit</div>
+        </div>)
+        // return (
+        // <div className="App">
+        //     <p className="App-intro">Score: {this.state.score}</p>	
+        //     <p className="App-intro">Note: {this.state.question.base} {this.state.question.variant}</p>				
+        //     <p><button href="/" onClick={this.playChord.bind(this, this.state.reference)}>Reference Note</button></p>
+        //     <p><button href="/" onClick={this.playChord.bind(this, this.state.question)}>Question Note</button></p>
+        //     <p><button href="/" onClick={this.onKeyClickHandler.bind(this, 0)}>Guess</button></p>
+        //     <MIDISounds ref={(ref) => (this.midiSounds = ref)} appElementName="root" instruments={[3]} />	
+        //     <hr/>
+        // </div>
+        
+        // )
     }
 }; export default Chords;

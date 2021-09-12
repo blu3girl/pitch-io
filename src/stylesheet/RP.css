@@ -35,3 +35,71 @@
     width: 600px;
     justify-content: space-between;
 }
+
+.inputs {
+    position: absolute;
+    display: flex;
+
+    left: 50%;
+    top: 75%;
+    transform: translate(-50%, 0);
+
+    flex-direction: row;
+}
+
+.board {
+    display: flex;
+
+    cursor: pointer;
+
+    justify-content: center;
+    align-items: center;
+
+    font-size: 48px;
+
+    width: 80px;
+    height: 80px;
+    border-radius: 5%;
+
+    margin: 15px;
+
+    background-color: var(--beau-blue);
+}
+
+.submitBtn {
+    position: absolute;
+
+    cursor: pointer;
+
+    left: 65%;
+    top: 75%;
+
+    margin: 15px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    font-size: 50px;
+
+    width: 190px;
+    height: 80px;
+    border-radius: 5%;
+
+    background-color: var(--bittersweet);
+}
+
+.score {
+    position: absolute;
+
+    text-align: left;
+
+    font-size: 55px;
+    color: var(--beau-blue);
+
+    left: 20%;
+    top: 75%;
+
+    margin: 15px;
+}
