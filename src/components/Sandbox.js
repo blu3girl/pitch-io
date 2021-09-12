@@ -1,96 +1,159 @@
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
 import MIDISounds from 'midi-sounds-react';
+import Nav from './Nav';
+import SandboxKeyboard from './SandboxKeyboard';
 
-class Sandbox extends Component {
+import question from './question.svg';
+import volume from './volume.svg';
+
+import '../stylesheet/RP.css';
+
+class RelativePitch extends Component {
     constructor(props) {
         super(props);
 
+        this.keyRef = createRef();
+
         this.state = {
-            instrument: 3,
+            instrument: 4,
+            reference: 60,
+            curStage: 1,
+            score: 0,
+            question: 0,
             octave: 4,
-            mode: "notes",
-            variant: "major"
+            selectedNote: null,
+            keyRef: null,
         }
 
-        this.chordIntervals = {
-            "major": [-12, -8, -5, 0, 4, 7, 12],
-            "minor": [-12, -9, -5, 0, 3, 7, 12],
-        }
-        this.scaleIntervals = {
-            "major": [-12, -10, -8, -7, -5, -3, -1, 0, 2, 4, 5, 7, 9, 11, 12],
-            "minor": [-12, -10, -8, -7, -5, -3, -1, 0, 2, 4, 5, 7, 8, 10, 12],
+        this.onKeyClickHandler = this.onKeyClickHandler.bind(this);
+        this.submitAnswer = this.submitAnswer.bind(this);
+        this.playReference = this.playReference.bind(this);
+    }
+
+    note2Char(note) {
+        var selectedNote = this.state.reference + parseInt(note);
+
+        if(this.state.selectedNote === null) return ["",""];
+
+        // 60: C4
+        var octave = Math.floor(selectedNote / 12)-1;
+        var rem = selectedNote % 12;
+        var note = ''
+        
+        switch(rem) {
+            case 0: note = 'C'; break;
+            case 1: note = 'C#'; break;
+            case 2: note = 'D'; break;
+            case 3: note = 'D#'; break;
+            case 4: note = 'E'; break;
+            case 5: note = 'F'; break;
+            case 6: note = 'F#'; break;
+            case 7: note = 'G'; break;
+            case 8: note = 'G#'; break;
+            case 9: note = 'A'; break;
+            case 10: note = 'A#'; break;
+            case 11: note = 'B'; break;
         }
 
-        this.playChord = this.playChord.bind(this);
+        return [note,octave];
+    }
+
+    char2note(note, octave) {
+        var rem = 0;
+        switch(note) {
+            case 'C': rem = 0; break;
+            case 'C#': rem = 1; break;
+            case 'D': rem = 2; break;
+            case 'D#': rem = 3; break;
+            case 'E': rem = 4; break;
+            case 'F': rem = 5; break;
+            case 'F#': rem = 6; break;
+            case 'G': rem = 7; break;
+            case 'G#': rem = 8; break;
+            case 'A': rem = 9; break;
+            case 'A#': rem = 10; break;
+            case 'B': rem = 11; break;
+        }
+
+        var o = (octave + 1)*12
+
+        return rem + o;
     }
 
     componentDidMount() {
         this.loadNewStage();
     }
 
-    playNote(note, length) {
-		this.midiSounds.playChordNow(this.state.instrument, [note], length);
-	}
+    loadNewStage() {
+        var newQuestion = -1;
+        do {
+            newQuestion = Math.floor(Math.random() * 25) - 12 + this.state.reference;
+        } while (newQuestion === this.state.question);
 
-    playChord(chord) {
-        chord.variant = ((chord.variant in this.chordIntervals) ? chord.variant : "major");
-
-        // Calculate notes in chord that fit on keyboard
-        // NOTE: assumes that keyboard is centered around reference - only works for C rn
-        var base = this.state.reference.base;
-        var notes = this.chordIntervals[chord.variant]
-            .map(function(value) {return value + chord.base;})
-            .filter(function(value) {
-                return (value >= base - 12) && (value <= base + 12)
-            });
-
-        this.midiSounds.playChordNow(this.state.instrument, notes, 2);
-	}
-    
-    // not useful right now
-    playScale(scale) {
-        scale.variant = ((scale.variant in this.scaleIntervals) ? scale.variant : "major");
-
-        // Calculate notes in chord that fit on keyboard
-        // NOTE: assumes that keyboard is centered around reference - only works for C rn
-        var base = (scale.base > 60)? scale.base - 12 : scale.base;;
-        var notes = this.scaleIntervals[scale.variant].map(function(value) {return value + scale.base;});
-
-        this.midiSounds.playChordNow(this.state.instrument, notes, 2);
+        this.playNote(newQuestion);
+        this.setState({question: newQuestion});
     }
 
+    playNote(note) {
+		this.midiSounds.playChordNow(this.state.instrument, [note], 2);
+	}
+
     onKeyClickHandler(note) {
-        if (this.state.mode === "notes") {
-            this.playNote(note, 0.5);
+        // this.setState({selectedNote: note});
+        this.playNote(note);
+    }
+
+    submitAnswer() {
+        if(this.state.selectedNote === null) return;
+        console.log(this.state.selectedNote + this.state.reference, this.state.question);
+        if (parseInt(this.state.selectedNote) + parseInt(this.state.reference) === this.state.question) {
+            this.onCorrectKey();
         }
-        else if (this.state.mode === "chords") {
-            this.playChord({base: note, variant: this.state.variant});
-        }
-        else if (this.state.mode === "scale") {
-            this.playNote(note, 0.5);
+        else {
+            this.onIncorrectKey();
         }
     }
 
     onCorrectKey() {
         this.setState({score: this.state.score + 1});
+        this.keyRef.current.unHighlight();
+        this.setState({selectedNote: null});
         this.loadNewStage();
     }
 
     onIncorrectKey() {
-        this.setState({score: this.state.score - 1});
+        this.playNote(20);
+        this.keyRef.current.highlightIncorrect(this.state.selectedNote);
+        // this.setState({score: this.state.score - 1});
+    }
+
+    playReference() {
+        this.playNote(this.state.reference);
+        this.keyRef.current.startBlink(0);
     }
 
     render() {
+        const Button = (props) => { return(
+            <div className="button" onClick={props.onClick}>
+                <img src={props.img}></img>
+                <a>{props.txt}</a>
+            </div>
+        )}
+
+        const currNote = this.note2Char(this.state.selectedNote);
+
+        console.log("ANSWER",this.note2Char(this.state.question - this.state.reference));
         return (
-        <div className="App">
-            <p className="App-intro">Score: {this.state.score}</p>	
-            <p className="App-intro">Note: {this.state.question.base} {this.state.question.variant}</p>				
-            <p><button href="/" onClick={this.playChord.bind(this, this.state.reference)}>Reference Note</button></p>
-            <p><button href="/" onClick={this.playChord.bind(this, this.state.question)}>Question Note</button></p>
-            <p><button href="/" onClick={this.onKeyClickHandler.bind(this, 0)}>Guess</button></p>
-            <MIDISounds ref={(ref) => (this.midiSounds = ref)} appElementName="root" instruments={[3]} />	
-            <hr/>
+        <div className="main" style={{paddingTop:'200px'}}>
+            <Nav/>
+            
+            <SandboxKeyboard ref={this.keyRef} onKeyClickHandler={this.onKeyClickHandler}/>
+            {/* <p className="App-intro">Score: {this.state.score}</p>	
+            <p className="App-intro">Note: {this.state.question}</p>				
+            
+            <p><button href="/" onClick={this.onKeyClickHandler.bind(this, 0)}>Guess</button></p> */}
+            <MIDISounds ref={(ref) => (this.midiSounds = ref)} appElementName="root" instruments={[this.state.instrument]}/>	
         </div>
         )
     }
-}; export default Sandbox;
+} export default RelativePitch;

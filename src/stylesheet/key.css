@@ -26,7 +26,7 @@
 }
 
 .blink *{
-    animation: blink .28s ease-in-out;
+    animation: blink .26s ease-in-out;
 }
 
 @keyframes blink {
