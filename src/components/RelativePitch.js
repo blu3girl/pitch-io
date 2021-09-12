@@ -90,6 +90,7 @@ class RelativePitch extends Component {
     loadNewStage() {
         if(this.state.maxQuestions!==null && this.state.maxQuestions<=0){
             alert("Maximum number of questions reached. Please change the limit or refresh to continue.")
+            return
         }
         var newQuestion = -1;
         do {
@@ -98,9 +99,16 @@ class RelativePitch extends Component {
 
         this.playNote(newQuestion);
         if(this.state.maxQuestions !== null){
-            this.setState({maxQuestions: this.state.maxQuestions-1})
+            this.setState({maxQuestions: this.state.maxQuestions-1});
+            console.log(this.state.maxQuestions)
         }
-        this.setState({question: newQuestion});
+
+        if(this.state.maxQuestions!==null && this.state.maxQuestions<=1){
+            alert("Maximum number of questions reached. Please change the limit or refresh to continue.");
+        }
+        else{
+            this.setState({question: newQuestion});
+        }
     }
 
     playNote(note) {
