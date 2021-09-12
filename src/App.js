@@ -13,7 +13,6 @@ function App() {
             <Route path="/rp" component={RelativePitch}/>
             <Route path="/chords" component={Chords}/>
           </Switch>
-            
     </Router>
   );
 }

@@ -1,0 +1,18 @@
+.settings {
+    position: absolute;
+    right: 0;
+}
+.settings-icon {
+    float: right;
+    width: 30px;
+    height: 30px;
+}
+
+.settings-menu {
+    background-color: lightblue;
+    width: 150px;
+}
+
+.settings-menu input{
+    width: 50px;
+}

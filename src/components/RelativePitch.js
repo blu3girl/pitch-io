@@ -7,6 +7,7 @@ import question from './question.svg';
 import volume from './volume.svg';
 
 import '../stylesheet/RP.css';
+import { Settings } from './Settings';
 
 class RelativePitch extends Component {
     constructor(props) {
@@ -23,9 +24,11 @@ class RelativePitch extends Component {
             octave: 4,
             selectedNote: -1,
             keyRef: null,
+            maxQuestions: null,
         }
         this.onKeyClickHandler = this.onKeyClickHandler.bind(this);
         this.submitAnswer = this.submitAnswer.bind(this);
+        this.setMaxQuestions = this.setMaxQuestions.bind(this);
     }
 
     componentDidMount() {
@@ -33,12 +36,18 @@ class RelativePitch extends Component {
     }
 
     loadNewStage() {
+        if(this.state.maxQuestions!==null && this.state.maxQuestions<=0){
+            alert("Maximum number of questions reached. Please change the limit or refresh to continue.")
+        }
         var newQuestion = -1;
         do {
             newQuestion = Math.floor(Math.random() * 25) - 12 + this.state.reference;
         } while (newQuestion === this.state.question);
 
         this.playNote(newQuestion);
+        if(this.state.maxQuestions !== null){
+            this.setState({maxQuestions: this.state.maxQuestions-1})
+        }
         this.setState({question: newQuestion});
     }
 
@@ -76,6 +85,14 @@ class RelativePitch extends Component {
         this.keyRef.current.test();
     }
 
+    setMaxQuestions(input){
+        
+        let new_Qs = parseInt(input.target.value);
+        if(new_Qs <= 0 || input.target.value == ""){
+            new_Qs=null;
+        }
+        this.setState({maxQuestions: new_Qs});
+    }
     render() {
         const Button = (props) => { return(
             <div className="button" onClick={props.onClick}>
@@ -87,7 +104,7 @@ class RelativePitch extends Component {
         return (
         <div className="main" style={{paddingTop:'200px'}}>
             <Nav/>
-            
+            <Settings changeQs={this.setMaxQuestions}/>
             <div className="buttonHolder">
                 <Button onClick={this.playNote.bind(this, this.state.reference)} txt={"Play Reference"} img={volume}/>
                 <Button onClick={this.playNote.bind(this, this.state.question)} txt={"Play Mystery"} img={question}/>
